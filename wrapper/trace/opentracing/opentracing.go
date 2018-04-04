@@ -40,8 +40,7 @@ func traceIntoContext(ctx context.Context, tracer opentracing.Tracer, name strin
 }
 
 func (o *otWrapper) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
-	name := fmt.Sprintf("%s.%s", req.Service(), req.Method())
-	ctx, span, err := traceIntoContext(ctx, o.ot, name, ext.SpanKindRPCClient)
+	ctx, span, err := traceIntoContext(ctx, o.ot, req.Method(), ext.SpanKindRPCClient)
 	if err != nil {
 		return err
 	}
@@ -71,8 +70,7 @@ func NewClientWrapper(ot opentracing.Tracer) client.Wrapper {
 func NewHandlerWrapper(ot opentracing.Tracer) server.HandlerWrapper {
 	return func(h server.HandlerFunc) server.HandlerFunc {
 		return func(ctx context.Context, req server.Request, rsp interface{}) error {
-			name := fmt.Sprintf("%s.%s", req.Service(), req.Method())
-			ctx, span, err := traceIntoContext(ctx, ot, name, ext.SpanKindRPCServer)
+			ctx, span, err := traceIntoContext(ctx, ot, req.Method(), ext.SpanKindRPCServer)
 			if err != nil {
 				return err
 			}
