@@ -24,12 +24,21 @@ func traceIntoContext(ctx context.Context, tracer opentracing.Tracer, name strin
 	if !ok {
 		md = make(map[string]string)
 	}
+
 	var sp opentracing.Span
-	wireContext, err := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(md))
-	if err != nil {
+	var parentSpanCtx opentracing.SpanContext
+	if parent := opentracing.SpanFromContext(ctx); parent != nil {
+		parentSpanCtx = parent.Context()
+	} else {
+		wc, err := tracer.Extract(opentracing.TextMap, opentracing.TextMapCarrier(md))
+		if err == nil {
+			parentSpanCtx = wc
+		}
+	}
+	if parentSpanCtx == nil {
 		sp = tracer.StartSpan(name, tag)
 	} else {
-		sp = tracer.StartSpan(name, opentracing.ChildOf(wireContext), tag)
+		sp = tracer.StartSpan(name, opentracing.ChildOf(parentSpanCtx), tag)
 	}
 	if err := sp.Tracer().Inject(sp.Context(), opentracing.TextMap, opentracing.TextMapCarrier(md)); err != nil {
 		return nil, nil, err
